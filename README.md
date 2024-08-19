@@ -53,7 +53,13 @@ image credit: https://developer.okta.com/docs/guides/dpop/nonoktaresourceserver/
 | `dpop HEADER` | `string` | **Required**. DPOP header token |
 
 
+## Roadmap
 
+- Dockerise the entire mono repo
+
+- compose containers to run on aws infra.
+
+- use lightweight db to store tokenmaps from auth/resource server
 
 
 ## Demo
