@@ -49,7 +49,7 @@ image credit: https://developer.okta.com/docs/guides/dpop/nonoktaresourceserver/
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
-| `authorization`      | `string` | **Required**. auth header
+| `authorization`      | `string` | **Required**. access token(/token(auth server))
 | `dpop HEADER` | `string` | **Required**. DPOP header token |
 
 
