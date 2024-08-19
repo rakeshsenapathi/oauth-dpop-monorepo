@@ -1,0 +1,16 @@
+{
+  "name": "oauth-dpop-monorepo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "turbo": "^2.0.14"
+  },
+  "packageManager": "^pnpm@6.32.4"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "auth-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "jwk-to-pem": "^2.0.6",
+    "node-jose": "^2.2.0",
+    "uuid": "^10.0.0"
+  },
+  "type": "module",
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

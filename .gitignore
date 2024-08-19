@@ -1,0 +1,8 @@
+.turbo
+node_modules/*
+.DS_Store
+
+// common to all apps
+apps/*/node_modules/*
+apps/*/.next
+apps/*/out
