@@ -1,10 +1,11 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import { v4 as uuidv4 } from 'uuid'; 
+import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken'
 import jwkPem from 'jwk-to-pem'
 import cors from 'cors'
 import crypto from 'crypto'
+import { checkAndStoreJti } from './lib/jtiStore.js'
 
 const app = express();
 app.use(bodyParser.urlencoded({
@@ -12,8 +13,7 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(cors());
 
-// TODO: use this to learn about redis/ redis maybe?
-// store the data in database instead of fetching it from this object
+// TODO: store the data in database instead of fetching it from this object
 const clients = {
     'client_id': {
         client_secret: 'client_secret',
@@ -24,15 +24,18 @@ const clients = {
 const authorizationCodes = new Map();
 const accessTokens = new Map();
 
+function replayResponse(res) {
+    // RFC 9449 §11.1 — replay detected → invalid_dpop_proof
+    return res
+        .status(401)
+        .set('WWW-Authenticate', 'DPoP error="invalid_dpop_proof", error_description="DPoP proof JTI has already been used"')
+        .json({ error: 'invalid_dpop_proof', error_description: 'DPoP proof JTI has already been used' });
+}
+
 //render ui to display to user to enter login credentials
-app.get('/authorize', (req, res) => {
+app.get('/authorize', async (req, res) => {
     const {client_id, redirect_uri, scope, dpop} = req.query;
-    // check if client_id, client_secret matches from db/ keyvalue pair in this case
     // TODO: fetch this from database.
-    // Future implementation should be a docker compose file which spins up
-    // 1. 2 node servers
-    // 2. redis or postgres instance
-    // 3. sets clients, client secret
     if(!clients[client_id] || !clients[client_id].redirect_uris.includes(redirect_uri)){
         return res.status(400).send('Invalid client or redirect URI');
     }
@@ -44,7 +47,17 @@ app.get('/authorize', (req, res) => {
             throw new Error('Missing JWK in token header');
         }
         const publicKey = jwkPem(jwk);
-        jwt.verify(dpop, publicKey);
+        const decodedDPoP = jwt.verify(dpop, publicKey);
+
+        if (!decodedDPoP.jti) {
+            throw new Error('Missing jti claim in DPoP proof');
+        }
+
+        const isNew = await checkAndStoreJti(decodedDPoP.jti, client_id);
+        if (!isNew) {
+            return replayResponse(res);
+        }
+
         const code = uuidv4();
         authorizationCodes.set(code, {client_id, redirect_uri, scope});
         res.redirect(`${redirect_uri}?code=${code}`);
@@ -56,7 +69,7 @@ app.get('/authorize', (req, res) => {
 
 });
 
-app.post('/token', (req, res) => {
+app.post('/token', async (req, res) => {
     const { grant_type, code, client_id, client_secret } = req.body;
     const dpop = req.headers.dpop;
     const authCode = authorizationCodes.get(code);
@@ -83,7 +96,17 @@ app.post('/token', (req, res) => {
             throw new Error('Missing JWK in token header');
         }
         const publicKey = jwkPem(jwk);
-        jwt.verify(dpop, publicKey, { algorithms: ['ES384'] });
+        const decodedDPoP = jwt.verify(dpop, publicKey, { algorithms: ['ES384'] });
+
+        if (!decodedDPoP.jti) {
+            throw new Error('Missing jti claim in DPoP proof');
+        }
+
+        const isNew = await checkAndStoreJti(decodedDPoP.jti, client_id);
+        if (!isNew) {
+            return replayResponse(res);
+        }
+
         const accessToken = crypto.randomBytes(32).toString('hex');
         accessTokens.set(accessToken, { client_id, scope: authCode.scope });
         authorizationCodes.delete(code);
